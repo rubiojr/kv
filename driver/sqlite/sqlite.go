@@ -6,16 +6,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rubiojr/kv"
+	"github.com/rubiojr/kv/errors"
 	_ "modernc.org/sqlite"
 )
 
-type Driver struct {
+type Database struct {
 	t  string
 	db *sql.DB
 }
 
-func (d *Driver) Init(tableName, urn string) error {
+func (d *Database) Init(tableName, urn string) error {
 	db, err := sql.Open("sqlite", urn)
 	if err != nil {
 		return err
@@ -39,26 +39,26 @@ CREATE TABLE IF NOT EXISTS %s(
 	return err
 }
 
-func (d *Driver) Get(key string) ([]byte, error) {
+func (d *Database) Get(key string) ([]byte, error) {
 	v, err := d.MGet(key)
 	if err != nil {
 		return nil, err
 	}
 	if len(v) == 0 {
-		return nil, kv.ErrKeyNotFound
+		return nil, errors.ErrKeyNotFound
 	}
 
 	return v[0], err
 }
 
-func (d *Driver) Set(key string, value []byte, expiresAt *time.Time) error {
+func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
 	sql := fmt.Sprintf("INSERT INTO %s (`key`, value, created_at, updated_at, expires_at) VALUES (?,?,?,?,?) ON CONFLICT(`key`) DO UPDATE SET updated_at=excluded.updated_at,value=excluded.value,expires_at=excluded.expires_at", d.t)
 
 	_, err := d.db.Exec(sql, key, value, time.Now(), time.Now(), expiresAt)
 	return err
 }
 
-func (d *Driver) MGet(keys ...string) ([][]byte, error) {
+func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	t := time.Now().Format(time.RFC3339)
 	args := make([]interface{}, len(keys))
 	for i, id := range keys {

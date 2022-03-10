@@ -3,37 +3,38 @@ package kv
 import (
 	"errors"
 	"time"
+
+	"github.com/rubiojr/kv/driver/sqlite"
 )
 
 const TABLE_NAME = "key_values"
 const MAX_KEY_LENGTH = 255
 const MAX_VALUE_LENGTH = 65535
 
-var ErrKeyNotFound = errors.New("key not found")
-
 type KV struct {
-	d Driver
+	d Database
 }
 
-type Driver interface {
+type Database interface {
 	Init(tableName string, urn string) error
 	Get(key string) ([]byte, error)
 	MGet(...string) ([][]byte, error)
 	Set(key string, value []byte, expireAt *time.Time) error
 }
 
-func New(driver Driver) *KV {
-	return &KV{d: driver}
-}
+func New(driver string, urn string) (Database, error) {
+	var db Database
+	var err error
+	switch driver {
+	case "sqlite":
+		db, err = &sqlite.Database{}, nil
+	default:
+		return nil, errors.New("driver not supported")
+	}
 
-func (k *KV) Get(key string) ([]byte, error) {
-	return k.d.Get(key)
-}
+	if err != nil {
+		return nil, err
+	}
 
-func (k *KV) MGet(keys ...string) ([][]byte, error) {
-	return k.d.MGet(keys...)
-}
-
-func (k *KV) Set(key string, value []byte, expiresAt *time.Time) error {
-	return k.d.Set(key, value, expiresAt)
+	return db, db.Init(TABLE_NAME, "db.db")
 }
