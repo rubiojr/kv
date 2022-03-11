@@ -29,7 +29,7 @@ func New(driver string, urn string) (Database, error) {
 	case "sqlite":
 		db, err = &sqlite.Database{}, nil
 	default:
-		return nil, errors.New("driver not supported")
+		err = errors.New("driver not supported")
 	}
 
 	if err != nil {
