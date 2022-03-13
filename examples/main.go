@@ -3,11 +3,26 @@ package main
 import (
 	"fmt"
 
+	"flag"
+
 	"github.com/rubiojr/kv"
 )
 
+var driver string
+
 func main() {
-	db, err := kv.New("sqlite", "file://foo")
+	flag.Parse()
+
+	var db kv.Database
+	var err error
+	switch driver {
+	case "mysql":
+		db, err = useMySQL()
+	case "sqlite":
+		db, err = useSqlite()
+	default:
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -41,4 +56,16 @@ func main() {
 	for _, v := range values {
 		fmt.Println(string(v))
 	}
+}
+
+func useSqlite() (kv.Database, error) {
+	return kv.New("sqlite", "sqlite.db")
+}
+
+func useMySQL() (kv.Database, error) {
+	return kv.New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
+}
+
+func init() {
+	flag.StringVar(&driver, "driver", "mysql", "driver to use")
 }
