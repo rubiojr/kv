@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/vmihailenco/msgpack"
 )
 
 var driver string
@@ -30,6 +31,23 @@ func TestSqlite(t *testing.T) {
 
 	assert.Equal(t, "bar", string(values[0]))
 	assert.Equal(t, "staff", string(values[1]))
+
+	t.Run("binary blobs", func(t *testing.T) {
+		b, err := msgpack.Marshal("blob")
+		assert.NoError(t, err)
+
+		err = db.Set("bin", b, nil)
+		assert.NoError(t, err)
+
+		v, err = db.Get("bin")
+		assert.NoError(t, err)
+
+		var blobStr string
+		err = msgpack.Unmarshal(b, &blobStr)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "blob", blobStr)
+	})
 }
 
 func TestMySQL(t *testing.T) {
@@ -54,6 +72,23 @@ func TestMySQL(t *testing.T) {
 
 	assert.Equal(t, "bar", string(values[0]))
 	assert.Equal(t, "staff", string(values[1]))
+
+	t.Run("binary blobs", func(t *testing.T) {
+		b, err := msgpack.Marshal("blob")
+		assert.NoError(t, err)
+
+		err = db.Set("bin", b, nil)
+		assert.NoError(t, err)
+
+		v, err = db.Get("bin")
+		assert.NoError(t, err)
+
+		var blobStr string
+		err = msgpack.Unmarshal(b, &blobStr)
+		assert.NoError(t, err)
+
+		assert.Equal(t, "blob", blobStr)
+	})
 }
 
 func TestMySQLDoubleInit(t *testing.T) {
