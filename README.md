@@ -2,9 +2,7 @@
 
 Work in progress.
 
-A simple key/value store on top of SQLite or MySQL.
-
-Go port of [GitHub's KV](https://github.com/github/github-ds/blob/master/lib/github/kv.rb).
+A simple key/value store on top of SQLite or MySQL (Go port of [GitHub's KV](https://github.com/github/github-ds/blob/master/lib/github/kv.rb)).
 
 Aims to be 100% compatible with that implementation.
 
@@ -56,6 +54,35 @@ if err != nil {
 for _, v := range values {
 	fmt.Println(string(v))
 }
+```
+
+### Serializing binary
+
+An example using [vmihailenco/msgpack](https://github.com/vmihailenco/msgpack) to serialize data.
+
+```Go
+// serialize a string as a binary blob
+b, err := msgpack.Marshal("blob")
+if err != nil {
+	panic(err)
+}
+
+err = db.Set("bin", b, nil)
+if err != nil {
+	panic(err)
+}
+
+v, err = db.Get("bin")
+if err != nil {
+	fmt.Println(err)
+}
+
+var blobStr string
+err = msgpack.Unmarshal(b, &blobStr)
+if err != nil {
+	panic(err)
+}
+fmt.Println(blobStr)
 ```
 
 ## TODO

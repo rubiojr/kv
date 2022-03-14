@@ -3,25 +3,14 @@ package main
 import (
 	"fmt"
 
-	"flag"
-
 	"github.com/rubiojr/kv"
+	"github.com/vmihailenco/msgpack"
 )
 
 var driver string
 
 func main() {
-	flag.Parse()
-
-	var db kv.Database
-	var err error
-	switch driver {
-	case "mysql":
-		db, err = useMySQL()
-	case "sqlite":
-		db, err = useSqlite()
-	default:
-	}
+	db, err := kv.New("sqlite", "sqlite.db")
 
 	if err != nil {
 		panic(err)
@@ -42,6 +31,26 @@ func main() {
 	}
 	fmt.Println(string(v))
 
+	// serialize a binary blob
+	b, err := msgpack.Marshal("blob")
+	if err != nil {
+		panic(err)
+	}
+	err = db.Set("bin", b, nil)
+	if err != nil {
+		panic(err)
+	}
+	v, err = db.Get("bin")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var blobStr string
+	err = msgpack.Unmarshal(b, &blobStr)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(blobStr)
+
 	// key not found error
 	_, err = db.Get("stuff")
 	if err != nil {
@@ -56,16 +65,4 @@ func main() {
 	for _, v := range values {
 		fmt.Println(string(v))
 	}
-}
-
-func useSqlite() (kv.Database, error) {
-	return kv.New("sqlite", "sqlite.db")
-}
-
-func useMySQL() (kv.Database, error) {
-	return kv.New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
-}
-
-func init() {
-	flag.StringVar(&driver, "driver", "mysql", "driver to use")
 }
