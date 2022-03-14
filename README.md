@@ -56,12 +56,12 @@ for _, v := range values {
 }
 ```
 
-### Serializing binary
+### Storing binary values
 
 An example using [vmihailenco/msgpack](https://github.com/vmihailenco/msgpack) to serialize data.
 
 ```Go
-// serialize a string as a binary blob
+// store a string as a binary blob
 b, err := msgpack.Marshal("blob")
 if err != nil {
 	panic(err)

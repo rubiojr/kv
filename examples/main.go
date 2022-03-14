@@ -31,7 +31,7 @@ func main() {
 	}
 	fmt.Println(string(v))
 
-	// serialize a binary blob
+	// store a binary blob
 	b, err := msgpack.Marshal("blob")
 	if err != nil {
 		panic(err)
