@@ -1,0 +1,19 @@
+#!/bin/sh
+
+trap "docker-compose down" EXIT
+docker-compose up -d
+
+# wait a minute for mysql to start
+for i in $(seq 60); do
+	if echo -e '\x04' | nc 127.0.0.1 3306 >/dev/null 2>&1; then
+		ready=1
+		break
+	fi
+	sleep 1
+done
+
+if [ -z "$ready" ]; then
+	exit 1
+fi
+
+go test

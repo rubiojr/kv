@@ -1,0 +1,12 @@
+name: build 
+
+on: [push]
+jobs:
+  integration:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: run integration tests
+      run: ./script/ci
