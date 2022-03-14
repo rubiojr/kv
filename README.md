@@ -1,6 +1,6 @@
 # KV
 
-Work in progress.
+Work in progress, not ready for prime time.
 
 A simple key/value store on top of SQLite or MySQL (Go port of [GitHub's KV](https://github.com/github/github-ds/blob/master/lib/github/kv.rb)).
 
