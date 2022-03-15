@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rubiojr/kv/errors"
+	"github.com/rubiojr/kv/types"
 	_ "modernc.org/sqlite"
 )
 
@@ -51,11 +52,29 @@ func (d *Database) Get(key string) ([]byte, error) {
 	return v[0], err
 }
 
-func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
-	sql := fmt.Sprintf("INSERT INTO %s (`key`, value, created_at, updated_at, expires_at) VALUES (?,?,?,?,?) ON CONFLICT(`key`) DO UPDATE SET updated_at=excluded.updated_at,value=excluded.value,expires_at=excluded.expires_at", d.t)
+// MSet sets the specified hash keys to their associated values, setting them to
+// expire at the specified time. Returns nil. Raises on error.
+func (d *Database) MSet(kvs types.KeyValues, expiresAt *time.Time) error {
+	now := time.Now()
+	rowValues := []interface{}{}
+	const row = "(?,?,?,?,?)"
+	var rows []string
 
-	_, err := d.db.Exec(sql, key, value, time.Now(), time.Now(), expiresAt)
+	for k, v := range kvs {
+		rows = append(rows, row)
+		rowValues = append(rowValues, k, v, now, now, expiresAt)
+	}
+
+	rowsStr := strings.Join(rows, ",")
+
+	sql := fmt.Sprintf("INSERT INTO %s (`key`, value, created_at, updated_at, expires_at) VALUES %s ON CONFLICT(`key`) DO UPDATE SET updated_at=excluded.updated_at,value=excluded.value,expires_at=excluded.expires_at", d.t, rowsStr)
+
+	_, err := d.db.Exec(sql, rowValues...)
 	return err
+}
+
+func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
+	return d.MSet(types.KeyValues{key: value}, expiresAt)
 }
 
 func (d *Database) MGet(keys ...string) ([][]byte, error) {

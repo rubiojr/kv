@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/rubiojr/kv/errors"
+	"github.com/rubiojr/kv/types"
 )
 
 type Database struct {
@@ -74,11 +75,27 @@ func (d *Database) Get(key string) ([]byte, error) {
 	return v[0], err
 }
 
-func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
-	sql := fmt.Sprintf("INSERT INTO %s (`key`, value, created_at, updated_at, expires_at) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE updated_at=VALUES(updated_at),value=VALUES(value),expires_at=VALUES(expires_at)", d.t)
+func (d *Database) MSet(kvs types.KeyValues, expiresAt *time.Time) error {
+	now := time.Now()
+	rowValues := []interface{}{}
+	const row = "(?,?,?,?,?)"
+	var rows []string
 
-	_, err := d.db.Exec(sql, key, value, time.Now(), time.Now(), expiresAt)
+	for k, v := range kvs {
+		rows = append(rows, row)
+		rowValues = append(rowValues, k, v, now, now, expiresAt)
+	}
+
+	rowsStr := strings.Join(rows, ",")
+
+	sql := fmt.Sprintf("INSERT INTO %s (`key`, value, created_at, updated_at, expires_at) VALUES %s ON DUPLICATE KEY UPDATE updated_at=VALUES(updated_at),value=VALUES(value),expires_at=VALUES(expires_at)", d.t, rowsStr)
+
+	_, err := d.db.Exec(sql, rowValues...)
 	return err
+}
+
+func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
+	return d.MSet(types.KeyValues{key: value}, expiresAt)
 }
 
 func (d *Database) MGet(keys ...string) ([][]byte, error) {

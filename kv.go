@@ -6,6 +6,7 @@ import (
 
 	"github.com/rubiojr/kv/driver/mysql"
 	"github.com/rubiojr/kv/driver/sqlite"
+	"github.com/rubiojr/kv/types"
 )
 
 const TABLE_NAME = "key_values"
@@ -21,6 +22,7 @@ type Database interface {
 	Get(key string) ([]byte, error)
 	MGet(...string) ([][]byte, error)
 	Set(key string, value []byte, expireAt *time.Time) error
+	MSet(kvs types.KeyValues, expireAt *time.Time) error
 }
 
 func New(driver string, urn string) (Database, error) {

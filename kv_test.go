@@ -48,6 +48,22 @@ func TestSqlite(t *testing.T) {
 
 		assert.Equal(t, "blob", blobStr)
 	})
+
+	t.Run("mset", func(t *testing.T) {
+		values := map[string]interface{}{}
+		values["mset1"] = "msetv1"
+		values["mset2"] = "msetv2"
+		err = db.MSet(values, nil)
+		assert.NoError(t, err)
+
+		v, err := db.Get("mset1")
+		assert.NoError(t, err)
+		assert.Equal(t, "msetv1", string(v))
+
+		v, err = db.Get("mset2")
+		assert.NoError(t, err)
+		assert.Equal(t, "msetv2", string(v))
+	})
 }
 
 func TestMySQL(t *testing.T) {
@@ -88,6 +104,22 @@ func TestMySQL(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, "blob", blobStr)
+	})
+
+	t.Run("mset", func(t *testing.T) {
+		values := map[string]interface{}{}
+		values["mset1"] = "msetv1"
+		values["mset2"] = "msetv2"
+		err = db.MSet(values, nil)
+		assert.NoError(t, err)
+
+		v, err := db.Get("mset1")
+		assert.NoError(t, err)
+		assert.Equal(t, "msetv1", string(v))
+
+		v, err = db.Get("mset2")
+		assert.NoError(t, err)
+		assert.Equal(t, "msetv2", string(v))
 	})
 }
 
