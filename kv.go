@@ -19,10 +19,15 @@ type KV struct {
 
 type Database interface {
 	Init(tableName string, urn string) error
+
 	Get(key string) ([]byte, error)
 	MGet(...string) ([][]byte, error)
+
 	Set(key string, value []byte, expireAt *time.Time) error
 	MSet(kvs types.KeyValues, expireAt *time.Time) error
+
+	Del(key string) error
+	MDel(keys ...string) error
 }
 
 func New(driver string, urn string) (Database, error) {

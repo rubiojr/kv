@@ -6,6 +6,7 @@ package kv
 import (
 	"testing"
 
+	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/vmihailenco/msgpack"
@@ -82,6 +83,40 @@ func TestMySQL(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, "blob", blobStr)
+	})
+
+	t.Run("mdel", func(t *testing.T) {
+		err = db.MSet(types.KeyValues{"bin": "foo"}, nil)
+		assert.NoError(t, err)
+
+		err = db.MDel("bin")
+		assert.NoError(t, err)
+
+		_, err = db.Get("bin")
+		assert.Error(t, err, errors.ErrKeyNotFound)
+
+		err = db.MSet(types.KeyValues{"bin": "foo", "bang": "bar"}, nil)
+		assert.NoError(t, err)
+
+		err = db.MDel("bin", "bang")
+		assert.NoError(t, err)
+
+		_, err = db.Get("bin")
+		assert.Error(t, err, errors.ErrKeyNotFound)
+
+		_, err = db.Get("bang")
+		assert.Error(t, err, errors.ErrKeyNotFound)
+	})
+
+	t.Run("del", func(t *testing.T) {
+		err = db.Set("bin", []byte("bang"), nil)
+		assert.NoError(t, err)
+
+		err = db.Del("bin")
+		assert.NoError(t, err)
+
+		_, err = db.Get("bin")
+		assert.Error(t, err, errors.ErrKeyNotFound)
 	})
 }
 

@@ -122,3 +122,25 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 
 	return values, nil
 }
+
+func (d *Database) MDel(keys ...string) error {
+	const insert = "?"
+	var klist []string
+	values := []interface{}{}
+
+	for _, k := range keys {
+		klist = append(klist, insert)
+		values = append(values, k)
+	}
+
+	inserts := strings.Join(klist, ",")
+
+	sql := fmt.Sprintf("DELETE FROM %s WHERE `key` IN(%s)", d.t, inserts)
+
+	_, err := d.db.Exec(sql, values...)
+	return err
+}
+
+func (d *Database) Del(key string) error {
+	return d.MDel(key)
+}
