@@ -8,6 +8,12 @@ Aims to be 100% compatible with that implementation.
 
 ## Initialization 
 
+Import the module first:
+
+```Go
+import "github.com/rubiojr/kv"
+```
+
 ### MySQL
 
 ```Go
