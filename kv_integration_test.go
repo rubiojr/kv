@@ -22,15 +22,18 @@ func TestMySQL(t *testing.T) {
 	assert.NoError(t, err)
 
 	v, err := db.Get("foo")
+	assert.NoError(t, err)
 	assert.Equal(t, "bar", string(v))
 
 	err = db.Set("stuff", []byte("staff"), nil)
 	assert.NoError(t, err)
 
 	v, err = db.Get("stuff")
+	assert.NoError(t, err)
 	assert.Equal(t, "staff", string(v))
 
 	values, err := db.MGet("foo", "stuff")
+	assert.NoError(t, err)
 
 	assert.Equal(t, "bar", string(values[0]))
 	assert.Equal(t, "staff", string(values[1]))

@@ -13,9 +13,7 @@ const TABLE_NAME = "key_values"
 const MAX_KEY_LENGTH = 255
 const MAX_VALUE_LENGTH = 65535
 
-type KV struct {
-	d Database
-}
+type KV struct{}
 
 type Database interface {
 	Init(tableName string, urn string) error
