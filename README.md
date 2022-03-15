@@ -26,6 +26,8 @@ Creates a `key_values` table in `my.db` file database to store key/values.
 
 ## Getting and setting keys
 
+Single keys:
+
 ```Go
 // set a couple of keys
 err = db.Set("foo", []byte("bar"), nil)
@@ -37,7 +39,6 @@ if err != nil {
 	panic(err)
 }
 
-
 // Get one key
 v, err := db.Get("foo")
 if err != nil {
@@ -45,6 +46,16 @@ if err != nil {
 }
 fmt.Println(string(v)) // prints bar
 
+// Deleting a single key
+err := db.Del("foo")
+if err != nil {
+	panic(err)
+}
+```
+
+Multiple keys:
+
+```Go
 // Get multiple keys
 values, err := db.MGet("foo", "staff")
 if err != nil {
@@ -54,6 +65,19 @@ if err != nil {
 for _, v := range values {
 	fmt.Println(string(v))
 }
+
+// Set multiple keys
+values := types.KeyValues{}
+values["mset1"] = "msetv1"
+values["mset2"] = "msetv2"
+err = db.MSet(values, nil)
+
+// Deleting multiple keys
+err := db.MDel("mset1", "mset2")
+if err != nil {
+	panic(err)
+}
+
 ```
 
 ### Storing binary values
@@ -93,7 +117,5 @@ fmt.Println(blobStr)
 - [ ] mexists
 - [ ] setnx
 - [ ] increment
-- [ ] del
-- [ ] mdel
 - [ ] ttl
 - [ ] mttl
