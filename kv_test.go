@@ -52,7 +52,7 @@ func TestSqlite(t *testing.T) {
 	})
 
 	t.Run("mset", func(t *testing.T) {
-		values := map[string]interface{}{}
+		values := types.KeyValues{}
 		values["mset1"] = "msetv1"
 		values["mset2"] = "msetv2"
 		err = db.MSet(values, nil)
