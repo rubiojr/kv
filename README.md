@@ -88,7 +88,7 @@ fmt.Println(blobStr)
 ## TODO
 
 - [ ] Custom driver options for both MySQL and SQLite
-- [ ] mset
+- [ ] expiration times
 - [ ] exists
 - [ ] mexists
 - [ ] setnx
