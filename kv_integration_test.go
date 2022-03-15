@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package kv
 
 import (
@@ -8,10 +11,8 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
-var driver string
-
-func TestSqlite(t *testing.T) {
-	db, err := New("sqlite", "testdata/sqlite.db")
+func TestMySQL(t *testing.T) {
+	db, err := New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
 	if err != nil {
 		t.Fatal(t, err)
 	}
@@ -84,10 +85,10 @@ func TestSqlite(t *testing.T) {
 	})
 }
 
-func TestSqliteDoubleInit(t *testing.T) {
-	_, err := New("sqlite", "testdata/sqlite.db")
+func TestMySQLDoubleInit(t *testing.T) {
+	_, err := New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
 	assert.NoError(t, err)
 
-	_, err = New("sqlite", "testdata/sqlite.db")
+	_, err = New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
 	assert.NoError(t, err)
 }

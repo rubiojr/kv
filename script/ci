@@ -1,6 +1,6 @@
 #!/bin/sh
 
-trap "docker-compose down" EXIT
+trap "rm testdata/sqlite.db; docker-compose down" EXIT
 docker-compose up -d
 
 # wait a minute for mysql to start
@@ -16,4 +16,4 @@ if [ -z "$ready" ]; then
 	exit 1
 fi
 
-go test
+go test --tags=integration
