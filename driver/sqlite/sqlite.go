@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	goerrors "errors"
+
 	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
 	_ "modernc.org/sqlite"
@@ -122,4 +124,53 @@ func (d *Database) MDel(keys ...string) error {
 
 func (d *Database) Del(key string) error {
 	return d.MDel(key)
+}
+
+// MExists checks for existence of all specified keys. Booleans will be returned in
+// the same order as keys are specified.
+func (d *Database) MExists(keys ...string) ([]bool, error) {
+	lkeys := len(keys)
+	if lkeys < 1 {
+		return []bool{}, nil
+	}
+
+	now := time.Now().UTC()
+	args := make([]interface{}, lkeys)
+	mcheck := map[string]bool{}
+	for i, id := range keys {
+		args[i] = id
+		mcheck[id] = false
+	}
+
+	sql := fmt.Sprintf("SELECT `key` FROM %s WHERE `key` IN(?"+strings.Repeat(",?", lkeys-1)+") AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, now)
+
+	rows, err := d.db.Query(sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	values := make([]bool, lkeys)
+
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return values, err
+		}
+		mcheck[key] = true
+	}
+
+	for i, k := range keys {
+		ok, _ := mcheck[k]
+		values[i] = ok
+	}
+
+	return values, nil
+}
+
+func (d *Database) Exists(key string) (bool, error) {
+	values, err := d.MExists(key)
+	if err != nil && !goerrors.Is(err, errors.ErrKeyNotFound) {
+		return false, err
+	}
+	return err == nil && values[0], err
 }

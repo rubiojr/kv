@@ -26,6 +26,9 @@ type Database interface {
 
 	Del(key string) error
 	MDel(keys ...string) error
+
+	Exists(key string) (bool, error)
+	MExists(keys ...string) ([]bool, error)
 }
 
 func New(driver string, urn string) (Database, error) {

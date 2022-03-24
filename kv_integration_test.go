@@ -116,11 +116,40 @@ func TestMySQL(t *testing.T) {
 		err = db.Set("bin", []byte("bang"), nil)
 		assert.NoError(t, err)
 
+		ok, err := db.Exists("bin")
+		assert.Equal(t, true, ok)
+
 		err = db.Del("bin")
 		assert.NoError(t, err)
 
 		_, err = db.Get("bin")
 		assert.Error(t, err, errors.ErrKeyNotFound)
+		ok, err = db.Exists("bin")
+		assert.Equal(t, false, ok)
+	})
+
+	t.Run("mexists", func(t *testing.T) {
+		values := types.KeyValues{}
+		values["mexists1"] = "msetv1"
+		values["mexists2"] = "msetv2"
+		err := db.MSet(values, nil)
+		assert.NoError(t, err)
+
+		ok, err := db.MExists("mexists1")
+		assert.NoError(t, err)
+		assert.True(t, len(ok) == 1)
+		assert.True(t, ok[0])
+
+		ok, err = db.MExists("mexists1", "mexistsN", "mexists2")
+		assert.NoError(t, err)
+		assert.True(t, len(ok) == 3)
+		assert.Equal(t, true, ok[0])
+		assert.Equal(t, false, ok[1])
+		assert.Equal(t, true, ok[2])
+
+		ok, err = db.MExists()
+		assert.NoError(t, err)
+		assert.True(t, len(ok) == 0)
 	})
 }
 
