@@ -33,6 +33,10 @@ func (d *Database) Init(tableName, urn string) error {
 	if err != nil {
 		return err
 	}
+	// Safe defaults: https://github.com/go-sql-driver/mysql/tree/90e813fe43edc87a66650b570e8362da44041a4c#usage
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 
 	sql := fmt.Sprintf(`
 CREATE DATABASE IF NOT EXISTS %s
