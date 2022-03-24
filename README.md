@@ -12,6 +12,7 @@ Work in progress.
 * No optmization work has happened yet.
 * Both drivers could use a few extra tests.
 * API changes not expected at this point.
+* Not SQL injection free
 
 Missing functionality:
 
