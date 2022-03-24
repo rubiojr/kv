@@ -1,10 +1,27 @@
 # KV
 
-Work in progress, not ready for prime time.
-
 A simple key/value store on top of SQLite or MySQL (Go port of [GitHub's KV](https://github.com/github/github-ds/blob/master/lib/github/kv.rb)).
 
-Aims to be 100% compatible with that implementation.
+Aims compatible with the original implementation by default, offering a few extra backend drivers and some extra configuration knobs.
+
+## Status
+
+Work in progress.
+
+* Drivers are almost feature complete.
+* No optmization work has happened yet.
+* Both drivers could use a few extra tests.
+* API changes not expected at this point.
+
+Missing functionality:
+
+- [ ] Custom driver options for MySQL and SQLite
+- [ ] setnx
+- [ ] increment
+- [ ] ttl
+- [ ] mttl
+- [ ] Configurable key/value max length
+- [ ] Enforce default key and value max length
 
 ## Initialization 
 
@@ -114,11 +131,3 @@ if err != nil {
 }
 fmt.Println(blobStr)
 ```
-
-## TODO
-
-- [ ] Custom driver options for both MySQL and SQLite
-- [ ] setnx
-- [ ] increment
-- [ ] ttl
-- [ ] mttl
