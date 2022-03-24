@@ -1,6 +1,6 @@
 #!/bin/sh
 
-trap "rm -f testdata/sqlite.db; docker-compose down" EXIT
+trap "rm testdata/sqlite.db; docker-compose down" EXIT
 docker-compose up -d
 
 # wait a minute for mysql to start

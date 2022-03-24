@@ -29,6 +29,7 @@ func TestMain(m *testing.M) {
 	}
 
 	fmt.Printf("Testing %s (%s)\n", driver, dsn)
+	os.Exit(m.Run())
 }
 
 func TestSqlite(t *testing.T) {
