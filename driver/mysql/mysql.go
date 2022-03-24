@@ -99,7 +99,7 @@ func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
 }
 
 func (d *Database) MGet(keys ...string) ([][]byte, error) {
-	t := time.Now().Format(time.RFC3339)
+	t := time.Now().UTC()
 	args := make([]interface{}, len(keys))
 	for i, id := range keys {
 		args[i] = id

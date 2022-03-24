@@ -5,6 +5,7 @@ package kv
 
 import (
 	"testing"
+	"time"
 
 	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
@@ -129,4 +130,32 @@ func TestMySQLDoubleInit(t *testing.T) {
 
 	_, err = New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
 	assert.NoError(t, err)
+}
+
+func TestMySQLExpiry(t *testing.T) {
+	db, err := New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
+	assert.NoError(t, err)
+
+	now := time.Now()
+	err = db.Set("expiry", []byte("value"), &now)
+	assert.NoError(t, err)
+
+	_, err = db.Get("expiry")
+	assert.Error(t, errors.ErrKeyNotFound, err)
+
+	later := time.Now().Add(1 * time.Minute)
+	err = db.Set("expiry2", []byte("value"), &later)
+	assert.NoError(t, err)
+
+	val, err := db.Get("expiry2")
+	assert.NoError(t, err)
+	assert.Equal(t, "value", string(val))
+
+	utc := time.Now().UTC().Add(1 * time.Minute)
+	err = db.Set("expiry3", []byte("value"), &utc)
+	assert.NoError(t, err)
+
+	val, err = db.Get("expiry3")
+	assert.NoError(t, err)
+	assert.Equal(t, "value", string(val))
 }

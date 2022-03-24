@@ -141,10 +141,18 @@ func TestExpiry(t *testing.T) {
 	assert.Error(t, errors.ErrKeyNotFound, err)
 
 	later := time.Now().Add(1 * time.Minute)
-	err = db.Set("expiry", []byte("value2"), &later)
+	err = db.Set("expiry2", []byte("value"), &later)
 	assert.NoError(t, err)
 
-	val, err := db.Get("expiry")
+	val, err := db.Get("expiry2")
 	assert.NoError(t, err)
-	assert.Equal(t, "value2", string(val))
+	assert.Equal(t, "value", string(val))
+
+	utc := time.Now().UTC().Add(1 * time.Minute)
+	err = db.Set("expiry3", []byte("value"), &utc)
+	assert.NoError(t, err)
+
+	val, err = db.Get("expiry3")
+	assert.NoError(t, err)
+	assert.Equal(t, "value", string(val))
 }

@@ -55,7 +55,7 @@ func (d *Database) Get(key string) ([]byte, error) {
 // MSet sets the specified hash keys to their associated values, setting them to
 // expire at the specified time. Returns nil. Raises on error.
 func (d *Database) MSet(kvs types.KeyValues, expiresAt *time.Time) error {
-	now := time.Now()
+	now := time.Now().UTC()
 	rowValues := []interface{}{}
 	const row = "(?,?,?,?,?)"
 	var rows []string
@@ -78,7 +78,7 @@ func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
 }
 
 func (d *Database) MGet(keys ...string) ([][]byte, error) {
-	now := time.Now()
+	now := time.Now().UTC()
 	args := make([]interface{}, len(keys))
 	for i, id := range keys {
 		args[i] = id
