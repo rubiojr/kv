@@ -1,13 +1,15 @@
 package kv
 
 import (
+	"bytes"
 	"testing"
 	"time"
+
+	"encoding/gob"
 
 	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/vmihailenco/msgpack"
 )
 
 func TestSqlite(t *testing.T) {
@@ -37,17 +39,20 @@ func TestSqlite(t *testing.T) {
 	assert.Equal(t, "staff", string(values[1]))
 
 	t.Run("binary blobs", func(t *testing.T) {
-		b, err := msgpack.Marshal("blob")
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err := enc.Encode("blob")
 		assert.NoError(t, err)
 
-		err = db.Set("bin", b, nil)
+		err = db.Set("bin", buf.Bytes(), nil)
 		assert.NoError(t, err)
 
 		v, err = db.Get("bin")
 		assert.NoError(t, err)
 
 		var blobStr string
-		err = msgpack.Unmarshal(b, &blobStr)
+		dec := gob.NewDecoder(&buf)
+		err = dec.Decode(&blobStr)
 		assert.NoError(t, err)
 
 		assert.Equal(t, "blob", blobStr)
@@ -70,17 +75,20 @@ func TestSqlite(t *testing.T) {
 	})
 
 	t.Run("binary mset", func(t *testing.T) {
-		b, err := msgpack.Marshal("blob")
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err := enc.Encode("blob")
 		assert.NoError(t, err)
 
-		err = db.MSet(types.KeyValues{"bin": b}, nil)
+		err = db.MSet(types.KeyValues{"bin": buf.Bytes()}, nil)
 		assert.NoError(t, err)
 
 		v, err = db.Get("bin")
 		assert.NoError(t, err)
 
 		var blobStr string
-		err = msgpack.Unmarshal(b, &blobStr)
+		dec := gob.NewDecoder(&buf)
+		err = dec.Decode(&blobStr)
 		assert.NoError(t, err)
 
 		assert.Equal(t, "blob", blobStr)
