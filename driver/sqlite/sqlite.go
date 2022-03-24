@@ -13,6 +13,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+const insert = "?"
+
 type Database struct {
 	t  string
 	db *sql.DB
@@ -81,14 +83,17 @@ func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
 }
 
 func (d *Database) MGet(keys ...string) ([][]byte, error) {
-	now := time.Now().UTC()
-	args := make([]interface{}, len(keys))
-	for i, id := range keys {
-		args[i] = id
+	lkeys := len(keys)
+	if lkeys < 1 {
+		return [][]byte{}, nil
 	}
-	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(?"+strings.Repeat(",?", len(args)-1)+") AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, now)
 
-	rows, err := d.db.Query(sql, args...)
+	knames, inserts := vRow(keys...)
+	now := time.Now().UTC()
+
+	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, inserts, now)
+
+	rows, err := d.db.Query(sql, knames...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +103,7 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	for rows.Next() {
 		var key, value string
 		if err := rows.Scan(&key, &value); err != nil {
-			panic(err)
+			return values, err
 		}
 		values = append(values, []byte(value))
 	}
@@ -107,17 +112,11 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 }
 
 func (d *Database) MDel(keys ...string) error {
-	const insert = "?"
-	var klist []string
-	values := []interface{}{}
-
-	for _, k := range keys {
-		klist = append(klist, insert)
-		values = append(values, k)
+	if len(keys) < 1 {
+		return nil
 	}
 
-	inserts := strings.Join(klist, ",")
-
+	values, inserts := vRow(keys...)
 	sql := fmt.Sprintf("DELETE FROM %s WHERE `key` IN(%s)", d.t, inserts)
 
 	_, err := d.db.Exec(sql, values...)
@@ -128,6 +127,18 @@ func (d *Database) Del(key string) error {
 	return d.MDel(key)
 }
 
+func vRow(keys ...string) ([]interface{}, string) {
+	const insert = "?"
+	var ilist []string
+	knames := []interface{}{}
+	for _, k := range keys {
+		ilist = append(ilist, insert)
+		knames = append(knames, k)
+	}
+
+	return knames, strings.Join(ilist, ",")
+}
+
 // MExists checks for existence of all specified keys. Booleans will be returned in
 // the same order as keys are specified.
 func (d *Database) MExists(keys ...string) ([]bool, error) {
@@ -136,17 +147,17 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 		return []bool{}, nil
 	}
 
+	knames, inserts := vRow(keys...)
+
 	now := time.Now().UTC()
-	args := make([]interface{}, lkeys)
 	mcheck := map[string]bool{}
-	for i, id := range keys {
-		args[i] = id
+	for _, id := range keys {
 		mcheck[id] = false
 	}
 
-	sql := fmt.Sprintf("SELECT `key` FROM %s WHERE `key` IN(?"+strings.Repeat(",?", lkeys-1)+") AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, now)
+	sql := fmt.Sprintf("SELECT `key` FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, inserts, now)
 
-	rows, err := d.db.Query(sql, args...)
+	rows, err := d.db.Query(sql, knames...)
 	if err != nil {
 		return nil, err
 	}
