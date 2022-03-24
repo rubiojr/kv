@@ -72,6 +72,7 @@ func (d *Database) MSet(kvs types.KeyValues, expiresAt *time.Time) error {
 	sql := fmt.Sprintf("INSERT INTO %s (`key`, value, created_at, updated_at, expires_at) VALUES %s ON CONFLICT(`key`) DO UPDATE SET updated_at=excluded.updated_at,value=excluded.value,expires_at=excluded.expires_at", d.t, rowsStr)
 
 	_, err := d.db.Exec(sql, rowValues...)
+
 	return err
 }
 
@@ -91,6 +92,7 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	values := [][]byte{}
 	for rows.Next() {
@@ -148,6 +150,7 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	values := make([]bool, lkeys)
 

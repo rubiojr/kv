@@ -112,6 +112,7 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	values := [][]byte{}
 	for rows.Next() {
@@ -169,6 +170,7 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	values := make([]bool, lkeys)
 
