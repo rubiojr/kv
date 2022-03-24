@@ -78,12 +78,12 @@ func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
 }
 
 func (d *Database) MGet(keys ...string) ([][]byte, error) {
-	t := time.Now().Format(time.RFC3339)
+	now := time.Now()
 	args := make([]interface{}, len(keys))
 	for i, id := range keys {
 		args[i] = id
 	}
-	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(?"+strings.Repeat(",?", len(args)-1)+") AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, t)
+	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(?"+strings.Repeat(",?", len(args)-1)+") AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, now)
 
 	rows, err := d.db.Query(sql, args...)
 	if err != nil {

@@ -2,6 +2,7 @@ package kv
 
 import (
 	"testing"
+	"time"
 
 	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
@@ -126,4 +127,24 @@ func TestSqliteDoubleInit(t *testing.T) {
 
 	_, err = New("sqlite", "testdata/sqlite.db")
 	assert.NoError(t, err)
+}
+
+func TestExpiry(t *testing.T) {
+	db, err := New("sqlite", "testdata/sqlite.db")
+	assert.NoError(t, err)
+
+	now := time.Now()
+	err = db.Set("expiry", []byte("value"), &now)
+	assert.NoError(t, err)
+
+	_, err = db.Get("expiry")
+	assert.Error(t, errors.ErrKeyNotFound, err)
+
+	later := time.Now().Add(1 * time.Minute)
+	err = db.Set("expiry", []byte("value2"), &later)
+	assert.NoError(t, err)
+
+	val, err := db.Get("expiry")
+	assert.NoError(t, err)
+	assert.Equal(t, "value2", string(val))
 }
