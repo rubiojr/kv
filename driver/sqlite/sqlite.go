@@ -128,7 +128,6 @@ func (d *Database) Del(key string) error {
 }
 
 func vRow(keys ...string) ([]interface{}, string) {
-	const insert = "?"
 	var ilist []string
 	knames := []interface{}{}
 	for _, k := range keys {
