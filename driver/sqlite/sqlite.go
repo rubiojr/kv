@@ -160,7 +160,7 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 	}
 
 	for i, k := range keys {
-		ok, _ := mcheck[k]
+		ok := mcheck[k]
 		values[i] = ok
 	}
 

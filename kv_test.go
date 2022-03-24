@@ -114,6 +114,7 @@ func TestSqlite(t *testing.T) {
 		assert.NoError(t, err)
 
 		ok, err := db.Exists("bin")
+		assert.NoError(t, err)
 		assert.Equal(t, true, ok)
 
 		err = db.Del("bin")
@@ -122,6 +123,7 @@ func TestSqlite(t *testing.T) {
 		_, err = db.Get("bin")
 		assert.Error(t, err, errors.ErrKeyNotFound)
 		ok, err = db.Exists("bin")
+		assert.NoError(t, err)
 		assert.Equal(t, false, ok)
 	})
 
