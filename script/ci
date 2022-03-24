@@ -1,6 +1,6 @@
 #!/bin/sh
 
-trap "rm testdata/sqlite.db; docker-compose down" EXIT
+trap "rm -f testdata/sqlite.db; docker-compose down" EXIT
 docker-compose up -d
 
 # wait a minute for mysql to start
@@ -16,4 +16,13 @@ if [ -z "$ready" ]; then
 	exit 1
 fi
 
-go test --tags=integration
+DRIVERS="
+sqlite:testdata/sqlite.db
+mysql:root:toor@tcp(127.0.0.1:3306)/gokv
+"
+
+for d in $DRIVERS; do
+	export GOKV_DRIVER=$(echo "$d" | cut -d : -f1)
+	export GOKV_DSN=$(echo "$d" | cut -d : -f2-)
+	go test
+done

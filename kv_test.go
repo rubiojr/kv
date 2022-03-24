@@ -2,6 +2,8 @@ package kv
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -12,8 +14,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var driver = "sqlite"
+var dsn = "testdata/sqlite.db"
+
+func TestMain(m *testing.M) {
+	d := os.Getenv("GOKV_DRIVER")
+	if d != "" {
+		driver = d
+	}
+
+	ds := os.Getenv("GOKV_DSN")
+	if ds != "" {
+		dsn = ds
+	}
+
+	fmt.Printf("Testing %s (%s)\n", driver, dsn)
+}
+
 func TestSqlite(t *testing.T) {
-	db, err := New("sqlite", "testdata/sqlite.db")
+	db, err := New(driver, dsn)
 	if err != nil {
 		t.Fatal(t, err)
 	}
@@ -161,15 +180,15 @@ func TestSqlite(t *testing.T) {
 }
 
 func TestSqliteDoubleInit(t *testing.T) {
-	_, err := New("sqlite", "testdata/sqlite.db")
+	_, err := New(driver, dsn)
 	assert.NoError(t, err)
 
-	_, err = New("sqlite", "testdata/sqlite.db")
+	_, err = New(driver, dsn)
 	assert.NoError(t, err)
 }
 
 func TestSqliteExpiry(t *testing.T) {
-	db, err := New("sqlite", "testdata/sqlite.db")
+	db, err := New(driver, dsn)
 	assert.NoError(t, err)
 
 	now := time.Now()
