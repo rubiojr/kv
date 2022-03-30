@@ -183,6 +183,9 @@ func TestSqlite(t *testing.T) {
 func TestSqliteDoubleInit(t *testing.T) {
 	_, err := New(driver, dsn)
 	assert.NoError(t, err)
+	if err != nil {
+		t.Fatal(t, err)
+	}
 
 	_, err = New(driver, dsn)
 	assert.NoError(t, err)
@@ -190,7 +193,9 @@ func TestSqliteDoubleInit(t *testing.T) {
 
 func TestSqliteExpiry(t *testing.T) {
 	db, err := New(driver, dsn)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Fatal(t, err)
+	}
 
 	now := time.Now()
 	err = db.Set("expiry", []byte("value"), &now)

@@ -21,15 +21,7 @@ type Database struct {
 }
 
 func (d *Database) Init(tableName, urn string) error {
-	var dbName string
-	tokens := strings.Split(urn, "/")
-	if len(tokens) <= 0 {
-		return fmt.Errorf("invalid urn string")
-	}
-
-	dbName = tokens[len(tokens)-1]
-
-	db, err := sql.Open("mysql", strings.TrimSuffix(urn, dbName))
+	db, err := sql.Open("mysql", urn)
 	if err != nil {
 		return err
 	}
@@ -38,20 +30,7 @@ func (d *Database) Init(tableName, urn string) error {
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
-	sql := fmt.Sprintf(`
-CREATE DATABASE IF NOT EXISTS %s
-`, dbName)
-	_, err = db.Exec(sql)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec(fmt.Sprintf("USE %s", dbName))
-	if err != nil {
-		return err
-	}
-
-	sql = fmt.Sprintf(
+	sql := fmt.Sprintf(
 		"CREATE TABLE IF NOT EXISTS %s ("+
 			"`id` bigint(20) NOT NULL AUTO_INCREMENT,"+
 			"`key` varchar(255) NOT NULL,"+
