@@ -38,7 +38,22 @@ import "github.com/rubiojr/kv"
 db, err := kv.New("mysql", "root:toor@tcp(127.0.0.1:3306)/gokv")
 ```
 
-Creates the `gokv` database and a `key_values` table to store key/values.
+Note that the database `gokv` and the table name used by default `key_values` will need to be created before using this driver.
+
+```sql
+USE gokv
+CREATE TABLE IF NOT EXISTS key_values (
+			`id` bigint(20) NOT NULL AUTO_INCREMENT,
+			`key` varchar(255) NOT NULL,
+			`value` blob NOT NULL,
+			`created_at` datetime NOT NULL,
+			`updated_at` datetime NOT NULL,
+			`expires_at` datetime DEFAULT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY index_key_values_on_key (`key`),
+			KEY index_key_values_on_expires_at (expires_at)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8
+```
 
 ### SQLite
 

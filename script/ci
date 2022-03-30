@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-trap "rm testdata/sqlite.db; docker-compose down" EXIT
+trap "rm -f testdata/sqlite.db; docker-compose down" EXIT
 docker-compose up -d
 
 # wait a minute for mysql to start
@@ -17,6 +17,21 @@ if [ -z "$ready" ]; then
 	exit 1
 fi
 mysql --protocol tcp -u root --password=toor -e "CREATE DATABASE gokv"
+
+cat <<'EOF' | mysql --protocol tcp -u root --password=toor
+USE gokv
+CREATE TABLE IF NOT EXISTS key_values (
+			`id` bigint(20) NOT NULL AUTO_INCREMENT,
+			`key` varchar(255) NOT NULL,
+			`value` blob NOT NULL,
+			`created_at` datetime NOT NULL,
+			`updated_at` datetime NOT NULL,
+			`expires_at` datetime DEFAULT NULL,
+			PRIMARY KEY (id),
+			UNIQUE KEY index_key_values_on_key (`key`),
+			KEY index_key_values_on_expires_at (expires_at)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8
+EOF
 
 DRIVERS="
 sqlite:testdata/sqlite.db

@@ -29,21 +29,6 @@ func (d *Database) Init(tableName, urn string) error {
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
-
-	sql := fmt.Sprintf(
-		"CREATE TABLE IF NOT EXISTS %s ("+
-			"`id` bigint(20) NOT NULL AUTO_INCREMENT,"+
-			"`key` varchar(255) NOT NULL,"+
-			"`value` blob NOT NULL,"+
-			"`created_at` datetime NOT NULL,"+
-			"`updated_at` datetime NOT NULL,"+
-			"`expires_at` datetime DEFAULT NULL,"+
-			"PRIMARY KEY (id),"+
-			"UNIQUE KEY index_key_values_on_key (`key`),"+
-			"KEY index_key_values_on_expires_at (expires_at)"+
-			") ENGINE=InnoDB DEFAULT CHARSET=utf8", tableName)
-
-	_, err = db.Exec(sql)
 	d.db = db
 	d.t = tableName
 
