@@ -11,6 +11,9 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
+    - name: Set up MySQL
+      run: |
+        sudo systemctl start mysql.service
     - name: Checkout
       uses: actions/checkout@v1
     - name: Install Go
