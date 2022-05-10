@@ -1,11 +1,25 @@
 #!/bin/sh
 set -e
 
-trap "rm -f testdata/sqlite.db" EXIT
+trap "rm -f testdata/sqlite.db; docker-compose down" EXIT
+docker-compose up -d
 
-cat <<'EOF' | mysql -u root --password=root
-CREATE DATABASE gokv;
-USE gokv;
+# wait a minute for mysql to start
+for i in $(seq 60); do
+	if echo -e '\x04' | nc 127.0.0.1 3306 >/dev/null 2>&1; then
+		ready=1
+		break
+	fi
+	sleep 1
+done
+
+if [ -z "$ready" ]; then
+	exit 1
+fi
+mysql --protocol tcp -u root --password=toor -e "CREATE DATABASE gokv"
+
+cat <<'EOF' | mysql --protocol tcp -u root --password=toor
+USE gokv
 CREATE TABLE IF NOT EXISTS key_values (
 			`id` bigint(20) NOT NULL AUTO_INCREMENT,
 			`key` varchar(255) NOT NULL,
@@ -21,7 +35,7 @@ EOF
 
 DRIVERS="
 sqlite:testdata/sqlite.db
-mysql:root:root@tcp(127.0.0.1:3306)/gokv
+mysql:root:toor@tcp(127.0.0.1:3306)/gokv
 "
 
 for d in $DRIVERS; do
