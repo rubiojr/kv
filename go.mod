@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/stretchr/testify v1.7.1
-	modernc.org/sqlite v1.17.2
+	modernc.org/sqlite v1.17.3
 )
 
 require (
