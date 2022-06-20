@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	modernc.org/sqlite v1.17.3
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
