@@ -44,6 +44,10 @@ CREATE TABLE IF NOT EXISTS %s(
 	return err
 }
 
+func (d *Database) Raw() *sql.DB {
+	return d.db
+}
+
 func (d *Database) Get(key string) ([]byte, error) {
 	v, err := d.MGet(key)
 	if err != nil {

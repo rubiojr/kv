@@ -35,6 +35,10 @@ func (d *Database) Init(tableName, urn string) error {
 	return err
 }
 
+func (d *Database) Raw() *sql.DB {
+	return d.db
+}
+
 func (d *Database) Get(key string) ([]byte, error) {
 	v, err := d.MGet(key)
 	if err != nil {
