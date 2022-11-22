@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
@@ -29,6 +30,8 @@ type Database interface {
 
 	Exists(key string) (bool, error)
 	MExists(keys ...string) ([]bool, error)
+
+	Raw() *sql.DB
 }
 
 func New(driver string, urn string) (Database, error) {
