@@ -3,7 +3,7 @@ module github.com/rubiojr/kv
 go 1.17
 
 require (
-	github.com/go-sql-driver/mysql v1.6.0
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/stretchr/testify v1.8.1
 	modernc.org/sqlite v1.20.4
 )
