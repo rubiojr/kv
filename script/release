@@ -1,0 +1,15 @@
+#!/bin/bash
+# Script for generating a release and pushing the gem.
+# Usage: ./script/release
+set -e
+
+BASE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )/.."
+
+# Grab version number
+VERSION=$(cat $BASE_PATH/VERSION)
+
+############################
+#######create release#######
+############################
+
+gh release create v"$VERSION" --generate-notes --draft
