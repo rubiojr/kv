@@ -64,6 +64,11 @@ func (d *Database) Get(key string) ([]byte, error) {
 // expire at the specified time. Returns nil. Raises on error.
 func (d *Database) MSet(kvs types.KeyValues, expiresAt *time.Time) error {
 	now := time.Now().UTC()
+	if expiresAt != nil {
+		// SQLite compares these timestamps as text, so use the same zone as reads.
+		utc := expiresAt.UTC()
+		expiresAt = &utc
+	}
 	rowValues := []interface{}{}
 	const row = "(?,?,?,?,?)"
 	var rows []string
@@ -95,7 +100,8 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	knames, inserts := vRow(keys...)
 	now := time.Now().UTC()
 
-	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, inserts, now)
+	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > ?)", d.t, inserts)
+	knames = append(knames, now)
 
 	rows, err := d.db.Query(sql, knames...)
 	if err != nil {
@@ -158,7 +164,8 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 		mcheck[id] = false
 	}
 
-	sql := fmt.Sprintf("SELECT `key` FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > '%s')", d.t, inserts, now)
+	sql := fmt.Sprintf("SELECT `key` FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > ?)", d.t, inserts)
+	knames = append(knames, now)
 
 	rows, err := d.db.Query(sql, knames...)
 	if err != nil {
