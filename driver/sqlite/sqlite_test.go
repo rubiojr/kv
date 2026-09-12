@@ -12,6 +12,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMSetEmpty(t *testing.T) {
+	past := time.Now().Add(-time.Hour)
+	for _, tc := range []struct {
+		name   string
+		values types.KeyValues
+		expiry *time.Time
+	}{
+		{"nil", nil, nil},
+		{"empty", types.KeyValues{}, nil},
+		{"nil_with_expiry", nil, &past},
+		{"empty_with_expiry", types.KeyValues{}, &past},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := &sqlite.Database{}
+			require.NoError(t, db.Init("key_values", filepath.Join(t.TempDir(), "kv.db")))
+			t.Cleanup(func() { require.NoError(t, db.Raw().Close()) })
+			require.NoError(t, db.Set("existing", []byte("value"), nil))
+
+			assert.NoError(t, db.MSet(tc.values, tc.expiry))
+
+			value, err := db.Get("existing")
+			require.NoError(t, err, "an empty batch must not expire or remove existing keys")
+			assert.Equal(t, []byte("value"), value)
+		})
+	}
+}
+
 func TestExpiryTimeZones(t *testing.T) {
 	now := time.Now().UTC()
 	for _, zone := range []struct {

@@ -60,9 +60,14 @@ func (d *Database) Get(key string) ([]byte, error) {
 	return v[0], err
 }
 
-// MSet sets the specified hash keys to their associated values, setting them to
-// expire at the specified time. Returns nil. Raises on error.
+// MSet sets the specified keys to their associated values and expiration time.
+// A nil expiresAt removes any existing expiration. A nil or empty kvs is a
+// successful no-op. MSet returns any error encountered while writing the values.
 func (d *Database) MSet(kvs types.KeyValues, expiresAt *time.Time) error {
+	if len(kvs) == 0 {
+		return nil
+	}
+
 	now := time.Now().UTC()
 	if expiresAt != nil {
 		// SQLite compares these timestamps as text, so use the same zone as reads.
