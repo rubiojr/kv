@@ -31,6 +31,11 @@ type Database interface {
 	Exists(key string) (bool, error)
 	MExists(keys ...string) ([]bool, error)
 
+	// TTL returns the expiration timestamp, or nil for missing, expired, or persistent keys.
+	TTL(key string) (*time.Time, error)
+	// MTTL returns expiration timestamps in input order, including duplicates.
+	MTTL(keys ...string) ([]*time.Time, error)
+
 	// Raw returns the pool used for writes.
 	Raw() *sql.DB
 	// RawReader returns the pool used for reads; some backends share it with Raw.

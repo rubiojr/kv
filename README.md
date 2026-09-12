@@ -19,8 +19,6 @@ Missing functionality:
 - [ ] Custom driver options for MySQL and SQLite
 - [ ] setnx
 - [ ] increment
-- [ ] ttl
-- [ ] mttl
 - [ ] Configurable key/value max length
 - [ ] Enforce default key and value max length
 
@@ -121,6 +119,26 @@ if err != nil {
 	panic(err)
 }
 
+```
+
+### Expiration timestamps
+
+`TTL` returns a key's expiration timestamp as `*time.Time`, matching GitHub KV.
+Missing, expired, and non-expiring keys return `nil` without an error.
+`MTTL` returns one entry per requested key, preserving order and duplicates.
+An empty `MTTL` call returns an empty slice. Database and decoding failures return
+an error.
+
+```Go
+expiresAt, err := db.TTL("foo")
+if err != nil {
+    panic(err)
+}
+if expiresAt != nil {
+    fmt.Println("expires at", *expiresAt)
+}
+
+expirations, err := db.MTTL("foo", "missing", "foo")
 ```
 
 ### Storing binary values
