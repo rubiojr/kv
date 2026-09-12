@@ -27,6 +27,7 @@ func main() {
 	if err != nil {
 		abort(err.Error())
 	}
+	defer db.Close()
 
 	var cmd string
 	var rem []string

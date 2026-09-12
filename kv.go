@@ -31,17 +31,60 @@ type Database interface {
 	Exists(key string) (bool, error)
 	MExists(keys ...string) ([]bool, error)
 
+	// Raw returns the pool used for writes.
 	Raw() *sql.DB
+	// RawReader returns the pool used for reads; some backends share it with Raw.
+	RawReader() *sql.DB
+	// Close closes all pools owned by the store.
+	Close() error
 }
 
-func New(driver string, urn string) (Database, error) {
+// Option configures a database before it is initialized.
+type Option func(*options)
+
+type options struct {
+	sqliteDriver      string
+	sqliteBusyTimeout *time.Duration
+	sqliteConfigured  bool
+}
+
+// WithSQLiteDriver selects a registered database/sql driver for the SQLite backend.
+// An empty name uses the default modernc driver. Import or register custom drivers
+// before calling New. This option is only valid for the SQLite backend.
+// File-backed stores require WAL and query_only support; initialization fails if
+// the supplied driver cannot provide them.
+func WithSQLiteDriver(name string) Option {
+	return func(o *options) {
+		o.sqliteDriver = name
+		o.sqliteConfigured = true
+	}
+}
+
+// WithSQLiteBusyTimeout sets the SQLite lock wait timeout on every connection.
+// The default is five seconds; zero disables waiting. Resolution is milliseconds.
+func WithSQLiteBusyTimeout(timeout time.Duration) Option {
+	return func(o *options) {
+		o.sqliteBusyTimeout = &timeout
+		o.sqliteConfigured = true
+	}
+}
+
+// New opens a key/value store using the selected backend and optional settings.
+func New(driver string, urn string, opts ...Option) (Database, error) {
+	var settings options
+	for _, option := range opts {
+		option(&settings)
+	}
 	var db Database
 	var err error
 	switch driver {
 	case "sqlite":
-		db = &sqlite.Database{}
+		db = &sqlite.Database{DriverName: settings.sqliteDriver, BusyTimeout: settings.sqliteBusyTimeout}
 		err = db.Init(TABLE_NAME, urn)
 	case "mysql":
+		if settings.sqliteConfigured {
+			return nil, errors.New("SQLite options require the sqlite backend")
+		}
 		db = &mysql.Database{}
 		err = db.Init(TABLE_NAME, urn)
 	default:

@@ -39,6 +39,19 @@ func (d *Database) Raw() *sql.DB {
 	return d.db
 }
 
+// RawReader returns the MySQL pool, which is shared by reads and writes.
+func (d *Database) RawReader() *sql.DB {
+	return d.db
+}
+
+// Close closes the underlying connection pool.
+func (d *Database) Close() error {
+	if d.db == nil {
+		return nil
+	}
+	return d.db.Close()
+}
+
 func (d *Database) Get(key string) ([]byte, error) {
 	v, err := d.MGet(key)
 	if err != nil {

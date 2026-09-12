@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -10,22 +11,51 @@ import (
 
 	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
-	_ "modernc.org/sqlite"
 )
 
 const insert = "?"
 
 type Database struct {
-	t  string
-	db *sql.DB
+	// DriverName is a registered database/sql driver. Empty selects modernc.
+	DriverName string
+	// BusyTimeout configures lock waiting in milliseconds. Nil defaults to five seconds.
+	BusyTimeout *time.Duration
+
+	t      string
+	db     *sql.DB
+	readDB *sql.DB
 }
 
-func (d *Database) Init(tableName, urn string) error {
-	db, err := sql.Open("sqlite", urn)
+// Init opens the database and creates its table if needed. File-backed databases
+// require WAL, one writer connection, and up to eight read-only connections.
+// Private in-memory and temporary databases share one connection for all access.
+func (d *Database) Init(tableName, urn string) (err error) {
+	driverName := d.DriverName
+	if driverName == "" {
+		driverName = defaultDriverName
+	}
+	busyTimeout := 5 * time.Second
+	if d.BusyTimeout != nil {
+		busyTimeout = *d.BusyTimeout
+	}
+	db, err := openPool(driverName, urn, busyTimeout, false)
 	if err != nil {
 		return err
 	}
+	var reader *sql.DB
+	defer func() {
+		if err != nil {
+			closePools(db, reader)
+		}
+	}()
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
 
+	// Ask SQLite rather than guessing from the filename or URI spelling.
+	var filename string
+	if err = db.QueryRow("SELECT file FROM pragma_database_list WHERE name='main'").Scan(&filename); err != nil {
+		return err
+	}
 	sql := fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %s(
   'key' varchar(255) NOT NULL,
@@ -38,14 +68,59 @@ CREATE TABLE IF NOT EXISTS %s(
 `, tableName)
 
 	_, err = db.Exec(sql)
+	if err != nil {
+		return err
+	}
+	reader = db
+	if filename != "" || sharedCacheURI(urn) {
+		reader, err = openReaderPool(driverName, urn, busyTimeout)
+		if err != nil {
+			return err
+		}
+	}
 	d.db = db
+	d.readDB = reader
 	d.t = tableName
 
 	return err
 }
 
+// Raw returns the single-connection writer pool. Release its rows, connections,
+// and transactions before another write. Use Close to close the whole store.
 func (d *Database) Raw() *sql.DB {
 	return d.db
+}
+
+// RawReader returns the query-only reader pool. Private memory and temporary
+// databases share the writer pool instead. Release its resources before Close.
+func (d *Database) RawReader() *sql.DB {
+	if d.readDB != nil {
+		return d.readDB
+	}
+	return d.db
+}
+
+// Close closes all pools owned by this database.
+func (d *Database) Close() error {
+	return closePools(d.db, d.readDB)
+}
+
+func closePools(writer, reader *sql.DB) error {
+	var readError, writeError error
+	if reader != nil && reader != writer {
+		readError = reader.Close()
+	}
+	if writer != nil {
+		writeError = writer.Close()
+	}
+	return goerrors.Join(readError, writeError)
+}
+
+// sharedCacheURI recognizes SQLite's standard URI option without changing the
+// DSN. Other driver-specific DSN formats remain opaque to KV.
+func sharedCacheURI(dsn string) bool {
+	uri, err := url.Parse(dsn)
+	return err == nil && uri.Scheme == "file" && uri.Query().Get("cache") == "shared"
 }
 
 func (d *Database) Get(key string) ([]byte, error) {
@@ -110,7 +185,7 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	sql := fmt.Sprintf("SELECT `key`, value FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > ?)", d.t, inserts)
 	knames = append(knames, now)
 
-	rows, err := d.db.Query(sql, knames...)
+	rows, err := d.RawReader().Query(sql, knames...)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +250,7 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 	sql := fmt.Sprintf("SELECT `key` FROM %s WHERE `key` IN(%s) AND (`expires_at` IS NULL OR `expires_at` > ?)", d.t, inserts)
 	knames = append(knames, now)
 
-	rows, err := d.db.Query(sql, knames...)
+	rows, err := d.RawReader().Query(sql, knames...)
 	if err != nil {
 		return nil, err
 	}

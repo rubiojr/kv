@@ -27,7 +27,7 @@ func TestMSetEmpty(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db := &sqlite.Database{}
 			require.NoError(t, db.Init("key_values", filepath.Join(t.TempDir(), "kv.db")))
-			t.Cleanup(func() { require.NoError(t, db.Raw().Close()) })
+			t.Cleanup(func() { require.NoError(t, db.Close()) })
 			require.NoError(t, db.Set("existing", []byte("value"), nil))
 
 			assert.NoError(t, db.MSet(tc.values, tc.expiry))
@@ -52,7 +52,7 @@ func TestExpiryTimeZones(t *testing.T) {
 		t.Run(zone.name, func(t *testing.T) {
 			db := &sqlite.Database{}
 			require.NoError(t, db.Init("key_values", filepath.Join(t.TempDir(), "kv.db")))
-			t.Cleanup(func() { require.NoError(t, db.Raw().Close()) })
+			t.Cleanup(func() { require.NoError(t, db.Close()) })
 
 			location := time.FixedZone(zone.name, zone.offset)
 			future := now.Add(time.Hour).In(location)

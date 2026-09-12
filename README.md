@@ -61,7 +61,11 @@ CREATE TABLE IF NOT EXISTS key_values (
 db, err := kv.New("sqlite", "my.db")
 ```
 
-Creates a `key_values` table in `my.db` file database to store key/values.
+Creates a `key_values` table in `my.db` using modernc by default.
+
+File-backed SQLite stores require WAL mode. Use `db.Close()` to close the entire store.
+See [SQLite BYOD](docs/sqlite-byod.md) for custom drivers, connection pools,
+timeouts, and memory-database behavior.
 
 ## Getting and setting keys
 
