@@ -91,6 +91,8 @@ func (d *Database) Set(key string, value []byte, expiresAt *time.Time) error {
 	return d.MSet(types.KeyValues{key: value}, expiresAt)
 }
 
+// MGet retrieves values for the specified keys. Results must be discarded if an
+// error is returned, since the read may be incomplete.
 func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	lkeys := len(keys)
 	if lkeys < 1 {
@@ -118,7 +120,7 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 		values = append(values, []byte(value))
 	}
 
-	return values, nil
+	return values, rows.Err()
 }
 
 func (d *Database) MDel(keys ...string) error {
@@ -150,6 +152,7 @@ func vRow(keys ...string) ([]interface{}, string) {
 
 // MExists checks for existence of all specified keys. Booleans will be returned in
 // the same order as keys are specified.
+// Results must be discarded if an error is returned, since the read may be incomplete.
 func (d *Database) MExists(keys ...string) ([]bool, error) {
 	lkeys := len(keys)
 	if lkeys < 1 {
@@ -187,7 +190,7 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 		values[i] = mcheck[k]
 	}
 
-	return values, nil
+	return values, rows.Err()
 }
 
 func (d *Database) Exists(key string) (bool, error) {
