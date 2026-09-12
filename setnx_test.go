@@ -18,7 +18,7 @@ func TestSetNX(t *testing.T) {
 	stored, err := db.SetNX("nx-new", value, &future)
 	require.NoError(t, err)
 	require.True(t, stored)
-	assert.True(t, original == future, "SetNX must not change the caller's timestamp")
+	assert.True(t, original == future, "SetNX must not change the caller's timestamp") //nolint:staticcheck // QF1009: compare the full value to detect mutation, including location.
 
 	later := future.Add(time.Hour)
 	stored, err = db.SetNX("nx-new", []byte("replacement"), &later)

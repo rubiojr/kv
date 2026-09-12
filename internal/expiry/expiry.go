@@ -25,7 +25,7 @@ func Read(db *sql.DB, table, castType string, keys ...string) ([]*time.Time, err
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck // Read-only query; readExpirations checks rows.Err on completion.
 	expirations, err := readExpirations(rows, now)
 	if err != nil {
 		return nil, err

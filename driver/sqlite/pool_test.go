@@ -55,7 +55,7 @@ func TestConnectionContention(t *testing.T) {
 					}
 					conn, err := pool.Conn(ctx)
 					require.NoError(t, err)
-					defer conn.Close()
+					defer conn.Close() //nolint:errcheck // Fallback if an assertion fails; explicit Close below is checked.
 					before := pool.Stats()
 					type result struct {
 						value any

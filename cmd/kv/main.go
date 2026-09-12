@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -13,21 +14,29 @@ var driver string
 
 func main() {
 	flag.Parse()
+	if err := run(); err != nil {
+		abort(err.Error())
+	}
+}
 
+func run() (err error) {
 	var db kv.Database
-	var err error
 	switch driver {
 	case "mysql":
 		db, err = useMySQL()
 	case "sqlite":
 		db, err = useSqlite()
 	default:
-		abort(fmt.Sprintf("unsupported driver %q", driver))
+		return fmt.Errorf("unsupported driver %q", driver)
 	}
 	if err != nil {
-		abort(err.Error())
+		return err
 	}
-	defer db.Close()
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close database: %w", closeErr))
+		}
+	}()
 
 	var cmd string
 	var rem []string
@@ -39,29 +48,32 @@ func main() {
 	switch cmd {
 	case "set":
 		if len(rem) != 3 {
-			abort("invalid number of arguments")
+			return errors.New("invalid number of arguments")
 		}
 
 		k := rem[1]
 		v := rem[2]
 		err = db.Set(k, []byte(v), nil)
 		if err != nil {
-			abort(err.Error())
+			return err
 		}
 	case "get":
 		if len(rem) < 2 {
-			abort("invalid number of arguments")
+			return errors.New("invalid number of arguments")
 		}
 		for _, k := range rem[1:] {
 			v, err := db.Get(k)
 			if err != nil {
-				abort(err.Error())
+				return err
 			}
-			fmt.Println(string(v))
+			if _, err := fmt.Println(string(v)); err != nil {
+				return err
+			}
 		}
 	default:
-		abort("Usage: kv [options] get|set key [value1, value2...]")
+		return errors.New("usage: kv [options] get|set key [value1, value2...]")
 	}
+	return nil
 }
 
 func useSqlite() (kv.Database, error) {

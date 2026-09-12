@@ -88,7 +88,7 @@ func (c *readerConnection) BeginTx(ctx context.Context, opts driver.TxOptions) (
 			return nil, err
 		}
 		//lint:ignore SA1019 Required fallback; query_only already enforces read-only access.
-		tx, err = c.Conn.Begin()
+		tx, err = c.Conn.Begin() //nolint:staticcheck // SA1019: legacy driver fallback; query_only enforces read-only access.
 	}
 	if err != nil {
 		return nil, errors.Join(err, c.restoreReadOnly(context.Background()))

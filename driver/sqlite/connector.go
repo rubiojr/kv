@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -67,8 +68,7 @@ func (c *configuredConnector) Connect(ctx context.Context) (driver.Conn, error) 
 		return nil, err
 	}
 	if err := configureConnection(ctx, conn, c.busyTimeout, c.readOnly); err != nil {
-		conn.Close()
-		return nil, err
+		return nil, errors.Join(err, conn.Close())
 	}
 	if c.readOnly {
 		return &readerConnection{Conn: conn}, nil
@@ -85,8 +85,7 @@ func openReaderPool(name, dsn string, busyTimeout time.Duration) (*sql.DB, error
 	reader.SetMaxIdleConns(8)
 	// Validate BYOD reader setup now, rather than failing the first Get.
 	if err := reader.Ping(); err != nil {
-		reader.Close()
-		return nil, err
+		return nil, errors.Join(err, reader.Close())
 	}
 	return reader, nil
 }
@@ -163,7 +162,7 @@ func execConnection(ctx context.Context, conn driver.Conn, query string) (err er
 		_, err = contextual.ExecContext(ctx, nil)
 	} else {
 		//lint:ignore SA1019 Required fallback for drivers without StmtExecContext.
-		_, err = stmt.Exec(nil)
+		_, err = stmt.Exec(nil) //nolint:staticcheck // SA1019: compatibility with drivers without StmtExecContext.
 	}
 	return err
 }
@@ -184,7 +183,7 @@ func queryConnection(ctx context.Context, conn driver.Conn, query string) (resul
 		rows, err = contextual.QueryContext(ctx, nil)
 	} else {
 		//lint:ignore SA1019 Required fallback for drivers without StmtQueryContext.
-		rows, err = stmt.Query(nil)
+		rows, err = stmt.Query(nil) //nolint:staticcheck // SA1019: compatibility with drivers without StmtQueryContext.
 	}
 	if err != nil {
 		return "", err

@@ -27,7 +27,7 @@ func TestWritesQueueWithoutBlockingReads(t *testing.T) {
 	defer cancel()
 	conn, err := db.Raw().Conn(ctx)
 	require.NoError(t, err)
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck // Fallback if an assertion fails; explicit Close below is checked.
 	before := db.Raw().Stats().WaitCount
 	done := make(chan error, 1)
 	go func() { done <- db.Set("written", []byte("new"), nil) }()

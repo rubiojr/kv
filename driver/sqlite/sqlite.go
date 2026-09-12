@@ -45,7 +45,7 @@ func (d *Database) Init(tableName, urn string) (err error) {
 	var reader *sql.DB
 	defer func() {
 		if err != nil {
-			closePools(db, reader)
+			err = goerrors.Join(err, closePools(db, reader))
 		}
 	}()
 	db.SetMaxOpenConns(1)
@@ -193,7 +193,7 @@ func (d *Database) MGet(keys ...string) ([][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck // Read-only query; completion errors are checked via rows.Err.
 
 	values := [][]byte{}
 	for rows.Next() {
@@ -258,7 +258,7 @@ func (d *Database) MExists(keys ...string) ([]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck // Read-only query; completion errors are checked via rows.Err.
 
 	values := make([]bool, lkeys)
 

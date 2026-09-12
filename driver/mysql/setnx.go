@@ -46,7 +46,7 @@ func (d *Database) setNXOnce(key string, value []byte, expiresAt *time.Time) (bo
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck // Fallback on errors; successful paths check Commit or Rollback.
 	now := time.Now().UTC()
 	var expired bool
 	query := fmt.Sprintf("SELECT expires_at IS NOT NULL AND expires_at<=? FROM %s WHERE `key`=? FOR UPDATE", d.t)
@@ -61,7 +61,7 @@ func (d *Database) setNXOnce(key string, value []byte, expiresAt *time.Time) (bo
 	case err != nil:
 		return false, err
 	case !expired:
-		return false, nil
+		return false, tx.Rollback()
 	default:
 		// Updating under the row lock avoids delete/reinsert deadlocks on expired keys.
 		query = fmt.Sprintf("UPDATE %s SET value=?, created_at=?, updated_at=?, expires_at=? WHERE `key`=?", d.t)
@@ -93,5 +93,5 @@ func (d *Database) setNXConflict(tx *sql.Tx, key string, insertError error) (boo
 	if expired {
 		return false, errSetNXExpiredConflict
 	}
-	return false, nil
+	return false, tx.Rollback()
 }

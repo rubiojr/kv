@@ -44,7 +44,7 @@ func TestWALConnections(t *testing.T) {
 			for i, pool := range []*sql.DB{db.Raw(), db.RawReader(), db.RawReader()} {
 				conn, err := pool.Conn(ctx)
 				require.NoError(t, err)
-				defer conn.Close()
+				t.Cleanup(func() { assert.NoError(t, conn.Close()) })
 				var journal string
 				var busy, synchronous int
 				require.NoError(t, conn.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&journal))
@@ -70,7 +70,7 @@ func TestWALWriteDuringRead(t *testing.T) {
 	require.NoError(t, db.Set("key", []byte("old"), nil))
 	tx, err := db.RawReader().BeginTx(t.Context(), &sql.TxOptions{ReadOnly: true})
 	require.NoError(t, err)
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck // Fallback if an assertion fails; Commit below is checked.
 	var snapshot string
 	require.NoError(t, tx.QueryRow("SELECT value FROM key_values WHERE key='key'").Scan(&snapshot))
 
@@ -95,7 +95,7 @@ func TestWALReadDuringWrite(t *testing.T) {
 	require.NoError(t, db.Set("key", []byte("old"), nil))
 	tx, err := db.Raw().BeginTx(t.Context(), nil)
 	require.NoError(t, err)
-	defer tx.Rollback()
+	defer func() { assert.NoError(t, tx.Rollback()) }()
 	_, err = tx.Exec("UPDATE key_values SET value='uncommitted' WHERE key='key'")
 	require.NoError(t, err)
 	done := make(chan error, 1)
@@ -152,7 +152,7 @@ func TestSharedMemoryConnections(t *testing.T) {
 	for range 2 {
 		conn, err := db.RawReader().Conn(ctx)
 		require.NoError(t, err)
-		defer conn.Close()
+		t.Cleanup(func() { assert.NoError(t, conn.Close()) })
 		var value string
 		require.NoError(t, conn.QueryRowContext(ctx, "SELECT value FROM key_values WHERE key='key'").Scan(&value))
 		assert.Equal(t, "value", value)

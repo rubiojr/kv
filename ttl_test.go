@@ -65,7 +65,7 @@ func TestTTLWhileWriterReserved(t *testing.T) {
 	require.NoError(t, db.Set("ttl-reader", []byte("value"), &future))
 	conn, err := db.Raw().Conn(t.Context())
 	require.NoError(t, err)
-	defer conn.Close()
+	t.Cleanup(func() { assert.NoError(t, conn.Close()) })
 	type result struct {
 		expires *time.Time
 		err     error

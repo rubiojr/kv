@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sync/atomic"
@@ -39,11 +40,10 @@ func (d *opaqueDriver) Open(dsn string) (driver.Conn, error) {
 	stmt, err := conn.Prepare("PRAGMA synchronous=NORMAL")
 	if err == nil {
 		_, err = stmt.(driver.StmtExecContext).ExecContext(context.Background(), nil)
-		stmt.Close()
+		err = errors.Join(err, stmt.Close())
 	}
 	if err != nil {
-		conn.Close()
-		return nil, err
+		return nil, errors.Join(err, conn.Close())
 	}
 	d.opens.Add(1)
 	if d.legacy {
@@ -132,7 +132,7 @@ func TestSQLiteDriver(t *testing.T) {
 			for _, pool := range []*sql.DB{db.Raw(), db.RawReader(), db.RawReader()} {
 				conn, err := pool.Conn(ctx)
 				require.NoError(t, err)
-				defer conn.Close()
+				t.Cleanup(func() { assert.NoError(t, conn.Close()) })
 				var mode string
 				var busy, synchronous int
 				require.NoError(t, conn.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&mode))

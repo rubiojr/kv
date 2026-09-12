@@ -13,6 +13,7 @@ import (
 type failingSetupConnection struct {
 	driver.Conn
 	err         error
+	closeErr    error
 	closed      bool
 	failOnClose bool
 }
@@ -23,7 +24,7 @@ func (c *failingSetupConnection) Prepare(string) (driver.Stmt, error) {
 	}
 	return nil, c.err
 }
-func (c *failingSetupConnection) Close() error { c.closed = true; return nil }
+func (c *failingSetupConnection) Close() error { c.closed = true; return c.closeErr }
 
 type setupConnector struct {
 	driver.Connector
@@ -53,4 +54,16 @@ func TestFailedConnectionSetupClosesConnection(t *testing.T) {
 		assert.Nil(t, got)
 		assert.True(t, conn.closed)
 	}
+}
+
+func TestFailedConnectionSetupPreservesCloseError(t *testing.T) {
+	setupErr := errors.New("setup failed")
+	closeErr := errors.New("close failed")
+	conn := &failingSetupConnection{err: setupErr, closeErr: closeErr}
+	connector := &configuredConnector{Connector: &setupConnector{conn: conn}}
+	got, err := connector.Connect(t.Context())
+	require.ErrorIs(t, err, setupErr)
+	assert.ErrorIs(t, err, closeErr)
+	assert.Nil(t, got)
+	assert.True(t, conn.closed)
 }

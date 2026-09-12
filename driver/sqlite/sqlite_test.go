@@ -76,7 +76,7 @@ func TestExpiryTimeZones(t *testing.T) {
 					require.NoError(t, db.Set("single", []byte("value"), phase.expiry))
 					require.NoError(t, db.MSet(types.KeyValues{"batch-a": "value", "batch-b": "value"}, phase.expiry))
 					if phase.expiry != nil {
-						assert.True(t, original == *phase.expiry, "writes must not change the caller's timestamp or location")
+						assert.True(t, original == *phase.expiry, "writes must not change the caller's timestamp or location") //nolint:staticcheck // QF1009: compare the full value to detect mutation, including location.
 					}
 
 					keys := []string{"single", "batch-a", "batch-b"}

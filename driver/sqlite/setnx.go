@@ -20,7 +20,7 @@ func (d *Database) SetNX(key string, value []byte, expiresAt *time.Time) (bool, 
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck // Fallback on errors; successful paths check Commit or Rollback.
 	now := time.Now().UTC()
 	// Write before reading: this acquires SQLite's writer lock without a
 	// deferred read-to-write upgrade race. Only key conflicts are ignored.
@@ -35,8 +35,11 @@ func (d *Database) SetNX(key string, value []byte, expiresAt *time.Time) (bool, 
 	}
 	if count == 0 {
 		stored, err := d.replaceExpired(tx, key, value, expiresAt)
-		if err != nil || !stored {
+		if err != nil {
 			return false, err
+		}
+		if !stored {
+			return false, tx.Rollback()
 		}
 	}
 	if err := tx.Commit(); err != nil {
