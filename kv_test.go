@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,10 +13,11 @@ import (
 	"github.com/rubiojr/kv/errors"
 	"github.com/rubiojr/kv/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var driver = "sqlite"
-var dsn = "testdata/sqlite.db"
+var dsn string
 
 func TestMain(m *testing.M) {
 	d := os.Getenv("GOKV_DRIVER")
@@ -28,17 +30,35 @@ func TestMain(m *testing.M) {
 		dsn = ds
 	}
 
-	fmt.Printf("Testing %s (%s)\n", driver, dsn)
+	label := dsn
+	if driver == "sqlite" && label == "" {
+		label = "temporary database"
+	}
+	fmt.Printf("Testing %s (%s)\n", driver, label)
 	os.Exit(m.Run())
 }
 
-func TestSqlite(t *testing.T) {
-	db, err := New(driver, dsn)
-	if err != nil {
-		t.Fatal(t, err)
+func testDSN(t *testing.T) string {
+	t.Helper()
+	if dsn != "" {
+		return dsn
 	}
+	require.Equal(t, "sqlite", driver, "GOKV_DSN must be set for non-SQLite drivers")
+	return filepath.Join(t.TempDir(), "sqlite.db")
+}
 
-	err = db.Set("foo", []byte("bar"), nil)
+func newTestDatabase(t *testing.T, urn string) Database {
+	t.Helper()
+	db, err := New(driver, urn)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, db.Close()) })
+	return db
+}
+
+func TestSqlite(t *testing.T) {
+	db := newTestDatabase(t, testDSN(t))
+
+	err := db.Set("foo", []byte("bar"), nil)
 	assert.NoError(t, err)
 
 	v, err := db.Get("foo")
@@ -181,24 +201,16 @@ func TestSqlite(t *testing.T) {
 }
 
 func TestSqliteDoubleInit(t *testing.T) {
-	_, err := New(driver, dsn)
-	assert.NoError(t, err)
-	if err != nil {
-		t.Fatal(t, err)
-	}
-
-	_, err = New(driver, dsn)
-	assert.NoError(t, err)
+	urn := testDSN(t)
+	newTestDatabase(t, urn)
+	newTestDatabase(t, urn)
 }
 
 func TestSqliteExpiry(t *testing.T) {
-	db, err := New(driver, dsn)
-	if err != nil {
-		t.Fatal(t, err)
-	}
+	db := newTestDatabase(t, testDSN(t))
 
 	now := time.Now()
-	err = db.Set("expiry", []byte("value"), &now)
+	err := db.Set("expiry", []byte("value"), &now)
 	assert.NoError(t, err)
 
 	_, err = db.Get("expiry")
