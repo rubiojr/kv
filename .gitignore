@@ -1,2 +1,4 @@
 /kv
 sqlite.db
+.kata.local.toml
+.octmp
