@@ -24,6 +24,8 @@ type Database interface {
 
 	Set(key string, value []byte, expireAt *time.Time) error
 	MSet(kvs types.KeyValues, expireAt *time.Time) error
+	// SetNX stores a value only when the key is missing or expired, returning whether it was stored.
+	SetNX(key string, value []byte, expireAt *time.Time) (bool, error)
 
 	Del(key string) error
 	MDel(keys ...string) error

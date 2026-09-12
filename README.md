@@ -17,7 +17,6 @@ Work in progress.
 Missing functionality:
 
 - [ ] Custom driver options for MySQL and SQLite
-- [ ] setnx
 - [ ] increment
 - [ ] Configurable key/value max length
 - [ ] Enforce default key and value max length
@@ -119,6 +118,23 @@ if err != nil {
 	panic(err)
 }
 
+```
+
+### Set a key only if absent
+
+`SetNX` atomically stores a value when its key is missing or expired. It returns
+`true` when stored, or `false` when a live key already exists. Existing values and
+expiration timestamps are preserved on a rejected write. A nil expiration makes
+the new value persistent. Database and constraint failures return an error.
+
+```Go
+stored, err := db.SetNX("claim", []byte("owner"), nil)
+if err != nil {
+    panic(err)
+}
+if stored {
+    fmt.Println("claim acquired")
+}
 ```
 
 ### Expiration timestamps
