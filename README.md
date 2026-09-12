@@ -4,23 +4,6 @@ A simple key/value store on top of SQLite or MySQL (Go port of [GitHub's KV](htt
 
 Aims compatible with the original implementation by default, offering a few extra backend drivers and some extra configuration knobs.
 
-## Status
-
-Work in progress.
-
-* Drivers are almost feature complete.
-* No optmization work has happened yet.
-* Both drivers could use a few extra tests.
-* API changes not expected at this point.
-* Not SQL injection free
-
-Missing functionality:
-
-- [ ] Custom driver options for MySQL and SQLite
-- [ ] increment
-- [ ] Configurable key/value max length
-- [ ] Enforce default key and value max length
-
 ## Initialization 
 
 Import the module first:
