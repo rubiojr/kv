@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -29,6 +30,9 @@ type Database interface {
 
 	Del(key string) error
 	MDel(keys ...string) error
+	// PurgeExpired deletes at most batchSize expired rows and returns the count.
+	// batchSize must be positive. Persistent and live keys are preserved.
+	PurgeExpired(ctx context.Context, batchSize int) (int64, error)
 
 	Exists(key string) (bool, error)
 	MExists(keys ...string) ([]bool, error)
@@ -53,6 +57,9 @@ type options struct {
 	sqliteDriver      string
 	sqliteBusyTimeout *time.Duration
 	sqliteConfigured  bool
+	cleanupInterval   time.Duration
+	cleanupBatchSize  int
+	cleanupError      func(error)
 }
 
 // WithSQLiteDriver selects a registered database/sql driver for the SQLite backend.
@@ -78,9 +85,15 @@ func WithSQLiteBusyTimeout(timeout time.Duration) Option {
 
 // New opens a key/value store using the selected backend and optional settings.
 func New(driver string, urn string, opts ...Option) (Database, error) {
-	var settings options
+	settings := options{cleanupBatchSize: 1000}
 	for _, option := range opts {
 		option(&settings)
+	}
+	if settings.cleanupInterval < 0 {
+		return nil, errors.New("cleanup interval must not be negative")
+	}
+	if settings.cleanupBatchSize <= 0 {
+		return nil, errors.New("cleanup batch size must be positive")
 	}
 	var db Database
 	var err error
@@ -98,5 +111,8 @@ func New(driver string, urn string, opts ...Option) (Database, error) {
 		err = errors.New("driver not supported")
 	}
 
+	if err == nil && settings.cleanupInterval > 0 {
+		db = startCleanup(db, settings)
+	}
 	return db, err
 }

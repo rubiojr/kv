@@ -71,6 +71,10 @@ CREATE TABLE IF NOT EXISTS %s(
 	if err != nil {
 		return err
 	}
+	indexName := "\"" + strings.ReplaceAll(tableName+"_expires_at_idx", "\"", "\"\"") + "\""
+	if _, err = db.Exec(fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s (expires_at)", indexName, tableName)); err != nil {
+		return err
+	}
 	reader = db
 	if filename != "" || sharedCacheURI(urn) {
 		reader, err = openReaderPool(driverName, urn, busyTimeout)

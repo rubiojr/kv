@@ -140,6 +140,54 @@ if expiresAt != nil {
 expirations, err := db.MTTL("foo", "missing", "foo")
 ```
 
+### Cleaning expired keys
+
+Expired keys are hidden from reads but remain stored until deleted or overwritten.
+`PurgeExpired` removes up to a positive batch size and returns the deleted row count.
+It supports context cancellation and preserves live and non-expiring keys.
+
+```Go
+deleted, err := db.PurgeExpired(context.Background(), 1000)
+if err != nil {
+    panic(err)
+}
+fmt.Println("removed", deleted, "expired keys")
+```
+
+Background cleanup is opt-in for both SQLite and MySQL:
+
+```Go
+db, err := kv.New("sqlite", "sqlite.db",
+    kv.WithCleanupInterval(time.Minute),
+    kv.WithCleanupBatchSize(1000),
+    kv.WithCleanupErrorHandler(func(err error) {
+        log.Printf("expiration cleanup: %v", err)
+    }),
+)
+if err != nil {
+    panic(err)
+}
+defer db.Close()
+```
+
+The worker starts after the first interval and removes at most one batch per tick
+(default 1000 rows), with no overlapping background purges. A zero interval
+disables cleanup; negative intervals and non-positive batch sizes are rejected.
+Batch-size and error-handler options alone do not enable it. Errors go to
+`slog.Error` unless a handler is supplied; cleanup retries on the next tick.
+Handlers run on the worker goroutine and must return promptly without calling
+`Close`. Shutdown cancellation is not reported as a cleanup error.
+
+`Close` cancels and waits for the worker before closing the pools. Close the store
+rather than calling `Raw().Close()`. Stores with cleanup enabled cannot be
+reinitialized with `Init`; open a new store instead. Each opened store gets its
+own worker, so enable it on only one instance when sharing a database if you want
+to avoid redundant sweeps.
+
+SQLite creates an `expires_at` index when opening new or existing stores. MySQL
+uses the index in the schema above. Deletion makes SQLite space reusable but does
+not necessarily shrink the database file; cleanup does not run `VACUUM`.
+
 ### Storing binary values
 
 An example using [vmihailenco/msgpack](https://github.com/vmihailenco/msgpack) to serialize data.
