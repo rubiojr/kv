@@ -22,6 +22,7 @@ func main() {
 	case "sqlite":
 		db, err = useSqlite()
 	default:
+		abort(fmt.Sprintf("unsupported driver %q", driver))
 	}
 	if err != nil {
 		abort(err.Error())
