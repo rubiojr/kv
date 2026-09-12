@@ -74,7 +74,8 @@ func init() {
 	flag.StringVar(&driver, "driver", "mysql", "driver to use")
 }
 
+// abort prints msg literally to stderr with a trailing newline and exits with status 1.
 func abort(msg string) {
-	fmt.Fprintf(os.Stderr, msg+"\n")
+	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
 }
