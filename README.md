@@ -120,6 +120,76 @@ if stored {
 }
 ```
 
+### Compare-and-swap and compare-and-delete
+
+`CompareAndSwap` atomically replaces a live key's value only if its current value
+is byte-equal to the expected one, and returns `true` when it swapped. The
+expiration is replaced too, as in `Set`: a nil expiration makes the key
+persistent. `CompareAndDelete` atomically deletes a live key only if its value
+matches. Both return `false` without an error when the value differs or the key
+is missing or expired; use `SetNX` to create absent keys. Values compare as bytes,
+including string values stored through `MSet`, and a nil expected value matches
+an empty one.
+
+```Go
+swapped, err := db.CompareAndSwap("counter", []byte("41"), []byte("42"), nil)
+if err != nil {
+    panic(err)
+}
+if !swapped {
+    fmt.Println("someone else changed counter first; read it and retry")
+}
+
+deleted, err := db.CompareAndDelete("claim", []byte("owner"))
+if err != nil {
+    panic(err)
+}
+fmt.Println("released:", deleted)
+```
+
+### Prefix scans and deletes
+
+`Scan` returns up to a positive limit of live keys starting with a prefix, ordered
+by key, as `types.Entry` values with the key, value, expiration (nil when
+persistent) and last update time in UTC. It returns keys after the given key, so
+pass the last key returned to read the next page, and stop at a short page. An
+empty prefix scans every key. Expired keys are skipped but stay stored.
+
+`DelPrefix` deletes every key starting with a prefix, live or expired, and returns
+how many rows it removed. An empty prefix is an error rather than "delete
+everything".
+
+```Go
+after := ""
+for {
+    entries, err := db.Scan("users/", after, 100)
+    if err != nil {
+        panic(err)
+    }
+    for _, e := range entries {
+        fmt.Println(e.Key, string(e.Value), e.ExpiresAt, e.UpdatedAt)
+    }
+    if len(entries) < 100 {
+        break
+    }
+    after = entries[len(entries)-1].Key
+}
+
+deleted, err := db.DelPrefix("sessions/")
+if err != nil {
+    panic(err)
+}
+fmt.Println("removed", deleted, "sessions")
+```
+
+Prefixes match and keys sort byte-wise on both backends: case-sensitive, with
+`%`, `_`, `*`, `?`, `[` and `\` taken literally, and UTF-8 keys in code point order.
+SQLite answers prefix ranges from the primary key index. MySQL compares the
+keys' bytes rather than the table's case-insensitive collation, which cannot use
+the key index, so prefix scans and deletes read the whole table there.
+Its unique key still compares keys case-insensitively, so `Ab` and `ab` remain
+the same key on MySQL.
+
 ### Expiration timestamps
 
 `TTL` returns a key's expiration timestamp as `*time.Time`, matching GitHub KV.

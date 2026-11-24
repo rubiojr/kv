@@ -65,12 +65,44 @@ type Database interface {
 	// the same meaning as in Set. Database and constraint failures return an error.
 	SetNX(key string, value []byte, expireAt *time.Time) (bool, error)
 
+	// CompareAndSwap atomically replaces a live key's value with new, and its
+	// expiration with expireAt, only if the current value is byte-equal to old,
+	// including values stored as strings through MSet. A nil old matches an
+	// empty value. It returns true if swapped, or false with no error if the
+	// value differs or the key is missing or expired; use SetNX for absent keys.
+	// A rejected swap preserves the existing value and expiration. expireAt has
+	// the same meaning as in Set. Database and constraint failures return an
+	// error.
+	CompareAndSwap(key string, old, new []byte, expireAt *time.Time) (bool, error)
+
+	// CompareAndDelete atomically deletes a live key only if its value is
+	// byte-equal to old, as in CompareAndSwap. It returns true if deleted, or
+	// false with no error if the value differs or the key is missing or expired.
+	CompareAndDelete(key string, old []byte) (bool, error)
+
 	// Del deletes key, whether live or expired. A missing key is a successful no-op.
 	Del(key string) error
 
 	// MDel deletes the specified keys, whether live or expired. Missing keys are
 	// ignored. With no keys, MDel is a successful no-op.
 	MDel(keys ...string) error
+
+	// DelPrefix deletes every key that starts with prefix, whether live or
+	// expired, and returns how many were deleted. Prefixes match byte-wise on
+	// both backends: case-sensitive, with no wildcard or escape characters. An
+	// empty prefix returns an error rather than deleting every key.
+	DelPrefix(prefix string) (int64, error)
+
+	// Scan returns up to limit live keys that start with prefix and sort
+	// strictly after after, with their values and timestamps, ordered by key.
+	// Prefixes match and keys sort byte-wise on both backends: case-sensitive,
+	// with no wildcard or escape characters. An empty prefix matches every key,
+	// and an empty after starts from the first one. To page, pass the last key
+	// returned as after until a page has fewer than limit entries. Expired keys
+	// are skipped and left in storage. limit must be positive or an error is
+	// returned. With no matches, Scan returns an empty slice and no error.
+	// Discard the results if an error is returned.
+	Scan(prefix, after string, limit int) ([]types.Entry, error)
 
 	// PurgeExpired deletes at most batchSize expired rows and returns the count.
 	// batchSize must be positive or an error is returned. Persistent and live
